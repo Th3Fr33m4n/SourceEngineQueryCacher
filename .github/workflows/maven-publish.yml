@@ -33,7 +33,3 @@ jobs:
       with:
           name: linux32
           path: publish/*
-      
-  publish:
-      name: 'Publish'
-      runs-on: ubuntu-latest
