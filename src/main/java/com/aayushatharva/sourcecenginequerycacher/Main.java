@@ -64,7 +64,7 @@ public final class Main {
                     .option(ChannelOption.SO_RCVBUF, Config.ReceiveBufferSize)
                     .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                     .option(UnixChannelOption.SO_REUSEPORT, true)
-                    .option(EpollChannelOption.UDP_GRO, true) // Enable UDP GRO
+                    .option(EpollChannelOption.UDP_GRO, false) // Enable UDP GRO
                     .handler(handler);
 
             for (int i = 0; i < Config.Threads; i++) {
