@@ -12,6 +12,7 @@ https://img.shields.io/github/downloads/hyperxpro/SourceEngineQueryCacher/total)
     <li> In-Memory Cache for storing A2S_PLAYER challenge codes. </li>
     <li> Multi-threaded with configurable thread count for maximum performance </li>
     <li> Highly configurable using Configuration file or Process arguments. </li>
+    <li> This version also works for HLDS (Counter-Strike 1.6) servers.</li>
   </ol>
 </p>
 
