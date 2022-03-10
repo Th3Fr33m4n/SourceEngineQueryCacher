@@ -31,5 +31,5 @@ jobs:
       uses: actions/upload-artifact@v2
       id: upload-job
       with:
-          name: linux
+          name: build
           path: target/*
