@@ -32,4 +32,4 @@ jobs:
       id: upload-job
       with:
           name: linux32
-          path: publish/*
+          path: target/*
