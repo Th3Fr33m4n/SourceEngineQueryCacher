@@ -47,7 +47,6 @@ final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
          * A2S_INFO = 25 Bytes
          * A2S_Player = 9 Bytes
          */
-        if (datagramPacket.content().readableBytes() == 25 || datagramPacket.content().readableBytes() == 9) {
             if (ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, datagramPacket.content())) {
                 ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_INFO.retainedDuplicate(), datagramPacket.sender()), ctx.voidPromise());
                 return;
