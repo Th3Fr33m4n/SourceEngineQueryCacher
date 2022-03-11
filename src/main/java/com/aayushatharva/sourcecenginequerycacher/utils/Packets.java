@@ -47,7 +47,7 @@ public final class Packets {
      * FFFFFFFF57
      */
     public static final ByteBuf A2S_PLAYER_CHALLENGE_REQUEST_3 = Main.BYTE_BUF_ALLOCATOR.directBuffer()
-            .writeBytes(new byte[]{-1, -1, -1, -1, 87});
+            .writeBytes(new byte[]{-1, -1, -1, -1, 87, -1, -1, -1, -1});
 
     /**
      * FFFFFFFF55
