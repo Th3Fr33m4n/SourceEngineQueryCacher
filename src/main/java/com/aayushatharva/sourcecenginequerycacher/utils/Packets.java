@@ -24,6 +24,12 @@ public final class Packets {
      */
     public static final ByteBuf A2S_INFO_RESPONSE_HEADER = Main.BYTE_BUF_ALLOCATOR.directBuffer()
             .writeBytes(new byte[]{-1, -1, -1, -1, 73});
+    
+    /**
+     * FFFFFFFF6D
+     */
+    public static final ByteBuf A2S_INFO_RESPONSE_HEADER_2 = Main.BYTE_BUF_ALLOCATOR.directBuffer()
+            .writeBytes(new byte[]{-1, -1, -1, -1, 109});
 
     /**
      * FFFFFFFF5500000000
