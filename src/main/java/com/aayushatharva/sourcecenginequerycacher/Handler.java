@@ -60,7 +60,7 @@ final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
                  * 2. Validate A2S_Player Challenge Response and send A2S_Player Packet.
                  */
                 if (ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_1) ||
-                        ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_2)) {
+                        ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_2) || ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_3)) {
                     sendA2SPlayerChallenge(ctx, datagramPacket);
                 } else {
                     sendA2SPlayerResponse(ctx, datagramPacket, ByteBufUtil.getBytes(datagramPacket.content()));
