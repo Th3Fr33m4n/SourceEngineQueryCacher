@@ -2,7 +2,6 @@ package com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer;
 
 import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

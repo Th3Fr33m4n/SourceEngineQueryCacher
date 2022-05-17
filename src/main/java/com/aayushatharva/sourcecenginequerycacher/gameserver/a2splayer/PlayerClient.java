@@ -1,11 +1,10 @@
 package com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer;
 
 import com.aayushatharva.sourcecenginequerycacher.Main;
-import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
+import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.epoll.EpollDatagramChannel;

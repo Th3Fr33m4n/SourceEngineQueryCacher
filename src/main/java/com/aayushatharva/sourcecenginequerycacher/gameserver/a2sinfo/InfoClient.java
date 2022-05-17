@@ -4,7 +4,6 @@ import com.aayushatharva.sourcecenginequerycacher.Main;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.epoll.EpollDatagramChannel;

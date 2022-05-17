@@ -11,9 +11,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
-import java.util.SplittableRandom;
 
-import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.*;
+import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_INFO_REQUEST_LENGTH;
+import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_PLAYER_REQUEST_LENGTH;
 import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
 import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerChallengeRequest;
 import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerRequestHeader;

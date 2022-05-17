@@ -1,13 +1,11 @@
 package com.aayushatharva.sourcecenginequerycacher;
 
-import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
-import com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer.PlayerClient;
-import com.aayushatharva.sourcecenginequerycacher.cache.CacheCleaner;
 import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
+import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
+import com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer.PlayerClient;
 import com.aayushatharva.sourcecenginequerycacher.server.Handler;
 import com.aayushatharva.sourcecenginequerycacher.server.Stats;
-import com.aayushatharva.sourcecenginequerycacher.utils.ByteBufUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -18,16 +16,12 @@ import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.channel.unix.UnixChannelOption;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public final class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
@@ -35,7 +29,6 @@ public final class Main {
     public static final ByteBufAllocator BYTE_BUF_ALLOCATOR = PooledByteBufAllocator.DEFAULT;
     public static EventLoopGroup eventLoopGroup;
     private static Stats stats;
-    private static CacheCleaner cacheCleaner;
     private static InfoClient infoClient;
     private static PlayerClient playerClient;
 
@@ -104,7 +97,6 @@ public final class Main {
 
     private static void initComponents() {
         stats = new Stats();
-        cacheCleaner = new CacheCleaner();
         infoClient = new InfoClient("A2SInfoClient");
         playerClient = new PlayerClient("A2SPlayerClient");
     }
