@@ -1,4 +1,4 @@
-package com.aayushatharva.sourcecenginequerycacher.utils;
+package com.aayushatharva.sourcecenginequerycacher.config;
 
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;

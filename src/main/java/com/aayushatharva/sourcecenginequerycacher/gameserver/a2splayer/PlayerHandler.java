@@ -1,7 +1,7 @@
 package com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer;
 
-import com.aayushatharva.sourcecenginequerycacher.utils.CacheHub;
-import com.aayushatharva.sourcecenginequerycacher.utils.Packets;
+import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
+import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,20 +10,22 @@ import io.netty.channel.socket.DatagramPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SChallengeResponse;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerResponse;
+
 final class PlayerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
     private static final Logger logger = LogManager.getLogger(PlayerHandler.class);
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
-
-        if (ByteBufUtil.equals(Packets.A2S_PLAYER_CHALLENGE_RESPONSE, datagramPacket.content().slice(0, 5))) {
-            ByteBuf responseBuf = ctx.alloc().buffer()
+        if (matchesA2SChallengeResponse(datagramPacket)) {
+            var responseBuf = ctx.alloc().buffer()
                     .writeBytes(Packets.A2S_PLAYER_REQUEST_HEADER.retainedDuplicate())
                     .writeBytes(datagramPacket.content().slice(5, 4));
 
             ctx.writeAndFlush(responseBuf);
-        } else if (ByteBufUtil.equals(Packets.A2S_PLAYER_RESPONSE_HEADER, datagramPacket.content().slice(0, 5))) {
+        } else if (matchesA2SPlayerResponse(datagramPacket)) {
             // Set new Packet Data
             CacheHub.A2S_PLAYER.clear().writeBytes(datagramPacket.content());
 

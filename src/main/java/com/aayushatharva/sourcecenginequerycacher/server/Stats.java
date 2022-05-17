@@ -1,6 +1,6 @@
-package com.aayushatharva.sourcecenginequerycacher;
+package com.aayushatharva.sourcecenginequerycacher.server;
 
-import com.aayushatharva.sourcecenginequerycacher.utils.Config;
+import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
-final class Stats extends Thread {
+public final class Stats extends Thread {
 
     private static final Logger logger = LogManager.getLogger(Stats.class);
     private boolean keepRunning = true;
@@ -56,13 +56,13 @@ final class Stats extends Thread {
 
     @SuppressWarnings("BigDecimalMethodWithoutRoundingCalled")
     private String calculateBps() {
-        BigDecimal bits = new BigDecimal(BPS.getAndSet(0L));
+        var bits = new BigDecimal(BPS.getAndSet(0L));
         bits = bits.divide(new BigDecimal("8"));
         return bits.toString();
     }
 
     private String getTimestamp() {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+        var sdf = new SimpleDateFormat("HH:mm:ss.SSS");
         return sdf.format(new Date());
     }
 
