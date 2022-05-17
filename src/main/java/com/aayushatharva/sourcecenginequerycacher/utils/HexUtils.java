@@ -10,7 +10,7 @@ public class HexUtils {
      * @return Hex String
      */
     public static String toHexString(final byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
+        var hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
             hexChars[j * 2] = HEX_NUMS.toCharArray()[v >>> 4];
