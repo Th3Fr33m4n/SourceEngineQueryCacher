@@ -1,10 +1,9 @@
 package com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo;
 
 import com.aayushatharva.sourcecenginequerycacher.Main;
-import com.aayushatharva.sourcecenginequerycacher.utils.Config;
-import com.aayushatharva.sourcecenginequerycacher.utils.Packets;
+import com.aayushatharva.sourcecenginequerycacher.config.Config;
+import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.epoll.EpollDatagramChannel;
@@ -23,7 +22,7 @@ public final class InfoClient extends Thread {
     @SuppressWarnings("BusyWait")
     public void run() {
         try {
-            Bootstrap bootstrap = new Bootstrap()
+            var bootstrap = new Bootstrap()
                     .group(Main.eventLoopGroup)
                     .channelFactory(EpollDatagramChannel::new)
                     .option(ChannelOption.ALLOCATOR, Main.BYTE_BUF_ALLOCATOR)
@@ -32,7 +31,7 @@ public final class InfoClient extends Thread {
                     .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Config.FixedReceiveAllocatorBufferSize))
                     .handler(new InfoHandler());
 
-            Channel channel = bootstrap.connect(Config.GameServer).sync().channel();
+            var channel = bootstrap.connect(Config.GameServer).sync().channel();
 
             while (keepRunning) {
                 channel.writeAndFlush(Packets.A2S_INFO_REQUEST.retainedDuplicate()).sync();

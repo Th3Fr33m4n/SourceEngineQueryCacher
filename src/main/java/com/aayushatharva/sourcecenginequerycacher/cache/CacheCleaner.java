@@ -1,5 +1,6 @@
-package com.aayushatharva.sourcecenginequerycacher.utils;
+package com.aayushatharva.sourcecenginequerycacher.cache;
 
+import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,7 +12,6 @@ public final class CacheCleaner extends Thread {
     @SuppressWarnings("BusyWait")
     @Override
     public void run() {
-
         logger.atInfo().log("Starting Challenge Code Cache Cleaner");
 
         while (keepRunning) {

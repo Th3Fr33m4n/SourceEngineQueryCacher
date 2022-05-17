@@ -2,7 +2,7 @@ package com.aayushatharva.sourcecenginequerycacher.utils;
 
 import io.netty.buffer.ByteBuf;
 
-public final class Utils {
+public final class ByteBufUtils {
 
     /**
      * Release {@link ByteBuf} safely
