@@ -3,6 +3,7 @@ package com.aayushatharva.sourcecenginequerycacher.server;
 import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -12,8 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 
-import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_INFO_REQUEST_LENGTH;
-import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_PLAYER_REQUEST_LENGTH;
+import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.*;
 import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
 import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
 import static io.netty.channel.ChannelHandler.Sharable;
@@ -27,8 +27,8 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         incrementStats(datagramPacket);
 
         if (!CacheHub.isComplete()) {
-            logger.error("Dropping query request because Cache is not ready. A2S_INFO: {}, A2S_PLAYER: {}",
-                    CacheHub.A2S_INFO, CacheHub.A2S_PLAYER);
+            logger.error("Dropping query request because Cache is not ready. A2S_INFO: {}, A2S_PLAYER: {}, A2S_RULES: {}",
+                    CacheHub.A2S_INFO, CacheHub.A2S_PLAYER, CacheHub.A2S_RULES);
             return;
         }
 
@@ -43,14 +43,14 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
                 if (matchesA2SPlayerChallengeRequest(datagramPacket)) {
                     sendA2SChallenge(ctx, datagramPacket);
                 } else {
-                    sendA2SPlayerResponse(ctx, datagramPacket);
+                    sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_PLAYER.retainedDuplicate());
                 }
                 return;
             } else if (matchesA2SRulesRequestHeader(datagramPacket)) {
                 if (matchesA2SRulesChallengeRequest(datagramPacket)) {
                     sendA2SChallenge(ctx, datagramPacket);
                 } else {
-                    sendA2SRulesResponse(ctx, datagramPacket);
+                    sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_RULES.retainedDuplicate());
                 }
                 return;
             }
@@ -72,7 +72,8 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
     private boolean hasValidLength(DatagramPacket packet) {
         var contentLength = packet.content().readableBytes();
         return contentLength == A2S_INFO_REQUEST_LENGTH ||
-                contentLength == A2S_PLAYER_REQUEST_LENGTH;
+                contentLength == A2S_PLAYER_REQUEST_LENGTH ||
+                contentLength == A2S_RULES_REQUEST_LENGTH;
     }
 
     private void sendA2SInfoResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
@@ -84,14 +85,14 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         // Add Challenge to Cache
         CacheHub.CHALLENGE_CACHE.put(toHexString(challenge), datagramPacket.sender().getAddress().getHostAddress());
 
-        // Send A2S PLAYER CHALLENGE Packet
+        // Send A2S CHALLENGE Packet
         var byteBuf = ctx.alloc().buffer();
         byteBuf.writeBytes(Packets.A2S_CHALLENGE_RESPONSE.retainedDuplicate());
         byteBuf.writeBytes(challenge);
         ctx.writeAndFlush(new DatagramPacket(byteBuf, datagramPacket.sender()));
     }
 
-    private void sendA2SPlayerResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+    private void sendA2SResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket, ByteBuf responseData) {
         // Look for Challenge Code in Cache and load Client IP Address Value from it.
         var challenge = toHexString(getChallengeFromA2SRequest(datagramPacket));
         var ipAddressOfClient = CacheHub.CHALLENGE_CACHE.getIfPresent(challenge);
@@ -103,27 +104,7 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
             // Match Client Current IP Address against Cache Stored Client IP Address
             if (ipAddressOfClient.equals(datagramPacket.sender().getAddress().getHostAddress())) {
-                ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_PLAYER.retainedDuplicate(), datagramPacket.sender()));
-            }
-        } else {
-            logger.debug("Invalid Challenge Code received from {}:{} [REQUEST DROPPED]",
-                    datagramPacket.sender().getAddress().getHostAddress(), datagramPacket.sender().getPort());
-        }
-    }
-
-    private void sendA2SRulesResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
-        // Look for Challenge Code in Cache and load Client IP Address Value from it.
-        var challenge = toHexString(getChallengeFromA2SRequest(datagramPacket));
-        var ipAddressOfClient = CacheHub.CHALLENGE_CACHE.getIfPresent(challenge);
-
-        // If Client IP Address Value is not NULL it means we found the Challenge and now we'll validate it.
-        if (ipAddressOfClient != null) {
-            // Invalidate Cache since we found Challenge
-            CacheHub.CHALLENGE_CACHE.invalidate(challenge);
-
-            // Match Client Current IP Address against Cache Stored Client IP Address
-            if (ipAddressOfClient.equals(datagramPacket.sender().getAddress().getHostAddress())) {
-                ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_RULES.retainedDuplicate(), datagramPacket.sender()));
+                ctx.writeAndFlush(new DatagramPacket(responseData, datagramPacket.sender()));
             }
         } else {
             logger.debug("Invalid Challenge Code received from {}:{} [REQUEST DROPPED]",

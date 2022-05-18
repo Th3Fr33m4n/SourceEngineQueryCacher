@@ -103,4 +103,5 @@ public final class Packets {
     public static final int A2S_CHALLENGE_LENGTH = 4;
     public static final int A2S_INFO_REQUEST_LENGTH = A2S_INFO_REQUEST.readableBytes();
     public static final int A2S_PLAYER_REQUEST_LENGTH = A2S_PLAYER_CHALLENGE_REQUEST_1.readableBytes();
+    public static final int A2S_RULES_REQUEST_LENGTH = A2S_RULES_CHALLENGE_REQUEST_1.readableBytes();
 }
