@@ -2,24 +2,24 @@ package com.aayushatharva.sourcecenginequerycacher.server;
 
 import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
-import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
+import com.aayushatharva.sourcecenginequerycacher.server.handlers.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+
 import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.*;
-import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
-import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
 import static io.netty.channel.ChannelHandler.Sharable;
 
 @Sharable
 public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
     private static final Logger logger = LogManager.getLogger(Handler.class);
+
+    private final A2SHandlerChain handlerChain = new A2SHandlerChain();
 
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
         incrementStats(datagramPacket);
@@ -32,7 +32,8 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
         //Packet size not matching any known request will be dropped.
         if (hasValidLength(datagramPacket)) {
-            if (ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, datagramPacket.content())) {
+            handlerChain.apply(ctx, datagramPacket);
+            /*if (ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, datagramPacket.content())) {
                 handleInfoRequest(ctx, datagramPacket);
                 return;
             } else if (matchesA2SPlayerRequestHeader(datagramPacket)) {
@@ -41,13 +42,13 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
             } else if (matchesA2SRulesRequestHeader(datagramPacket)) {
                 handleRulesRequest(ctx, datagramPacket);
                 return;
-            }
+            }*/
         }
 
         dropLog(datagramPacket);
     }
 
-    private void handleInfoRequest(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+    /*private void handleInfoRequest(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
         sendA2SInfoResponse(ctx, datagramPacket);
     }
 
@@ -65,7 +66,7 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         } else {
             sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_RULES.retainedDuplicate());
         }
-    }
+    }*/
 
     private void incrementStats(DatagramPacket packet) {
         if (Config.stats_PPS) {
@@ -84,7 +85,7 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
                 contentLength == A2S_RULES_REQUEST_LENGTH;
     }
 
-    private void sendA2SInfoResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+    /*private void sendA2SInfoResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
         ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_INFO.retainedDuplicate(), datagramPacket.sender()));
     }
 
@@ -118,7 +119,7 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
             logger.debug("Invalid Challenge Code received from {}:{} [REQUEST DROPPED]",
                     datagramPacket.sender().getAddress().getHostAddress(), datagramPacket.sender().getPort());
         }
-    }
+    }*/
 
     private void dropLog(DatagramPacket datagramPacket) {
         logger.debug("Dropping Packet of Length {} bytes from {}:{}", datagramPacket.content().readableBytes(),
