@@ -1,67 +1,49 @@
 package com.aayushatharva.sourcecenginequerycacher.config;
 
+import com.aayushatharva.sourcecenginequerycacher.config.parsers.CmdValueParser;
+import com.aayushatharva.sourcecenginequerycacher.config.parsers.PropertiesValueParser;
+import com.aayushatharva.sourcecenginequerycacher.config.parsers.ValueParser;
+import com.aayushatharva.sourcecenginequerycacher.exceptions.ConfigNotFoundException;
+import com.aayushatharva.sourcecenginequerycacher.exceptions.InvalidConfigPathException;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 public final class Config {
 
     private static final Logger logger = LogManager.getLogger(Config.class);
+    private static final String DEFAULT_CONFIG_NAME = "./Cacher.conf";
     private static final Options options;
-
-    /**
-     * Cacher Server Threads
-     */
-    public static Integer Threads = 2;
-
-    /**
-     * Game Update Interval
-     */
-    public static Long GameUpdateInterval = 1000L;
-
-    /**
-     * Game Update Socket Timeout
-     */
-    public static Integer GameUpdateSocketTimeout = 1000;
-
-    /**
-     * Maximum Challenge Code in Cache
-     */
-    public static Long MaxChallengeCode = 100000L;
-
-    /**
-     * Challenge Code Cache Cleaner Interval
-     */
-    public static Long ChallengeCodeCacheCleanerInterval = 1000L;
-
-    /**
-     * Challenge Code Validity
-     */
-    public static Long ChallengeCodeTTL = 60000L;
-
-    /**
-     * Challenge Code Cache Concurrency
-     */
-    public static int ChallengeCodeCacheConcurrency = 8;
+    public static Integer threads;
+    public static Long gameUpdateInterval;
+    public static Integer gameUpdateSocketTimeout;
+    public static Long maxChallengeCodes;
+    public static Long challengeCodeCacheCleanerInterval;
+    public static Long challengeCodeTTL;
+    public static int challengeCodeCacheConcurrency;
 
     // IP Addresses and Ports
-    public static InetSocketAddress LocalServer = new InetSocketAddress(InetAddress.getLoopbackAddress(), 27016);
-    public static InetSocketAddress GameServer = new InetSocketAddress(InetAddress.getLoopbackAddress(), 27015);
+    public static InetSocketAddress localServer;
+    public static InetSocketAddress gameServer;
 
     // Buffers
-    public static Integer ReceiveBufferSize = 65535;
-    public static Integer SendBufferSize = 65535;
-    public static Integer FixedReceiveAllocatorBufferSize = 65535;
+    public static Integer receiveBufferSize;
+    public static Integer sendBufferSize;
+    public static Integer fixedReceiveAllocatorBufferSize;
 
     // Stats
-    public static boolean Stats_PPS = false;
-    public static boolean Stats_bPS = false;
+    public static boolean stats_PPS;
+    public static boolean stats_bPS;
 
     static {
         options = new Options()
@@ -72,118 +54,41 @@ public final class Config {
                 .addOption("p", "ppsStats", false, "Enable Packets per Second Stats")
                 .addOption("b", "bpsStats", false, "Enable Bits per Second Stats")
 
-
-                .addOption("gameUpdateRate", true, "Game Server Update rate in Milliseconds")
+                .addOption("gameUpdateInterval", true, "Game Server Update rate in Milliseconds")
                 .addOption("gameUpdateTimeout", true, "Game Server Update Socket Timeout in Milliseconds")
 
                 /* Challenge Code */
-                .addOption("maxChallengeCode", true, "Maximum Challenge Codes to be saved")
-                .addOption("challengeCodeCacheCleaner", true, "Challenge Code Cache Cleaner Interval in Milliseconds")
-                .addOption("challengeCodeTTL", true, "Maximum Validity of Challenge Code in Milliseconds")
-                .addOption("challengeCodeCacheConcurrency", true, "Challenge Code Cache Concurrency")
+                .addOption("maxChallengeCodes", true, "Maximum Challenge Codes to be saved")
+                .addOption("challengeCacheCleanerInterval", true, "Challenge Code Cache Cleaner Interval in Milliseconds")
+                .addOption("challengeTTL", true, "Maximum Validity of Challenge Code in Milliseconds")
+                .addOption("challengeCacheConcurrency", true, "Challenge Code Cache Concurrency")
 
                 /* IP Addresses and Ports */
-                .addOption("gameip", true, "Game Server IP Address")
-                .addOption("gameport", true, "Game Server Port")
+                .addOption("gameIp", true, "Game Server IP Address")
+                .addOption("gamePort", true, "Game Server Port")
                 .addOption("bind", true, "Local Server IP Address on which Cacher Server will bind and listen")
                 .addOption("port", true, "Local Server Port on which Cacher Server will bind and listen")
 
                 /* Buffers */
-                .addOption("r", "receiveBuf", true, "Server Receive Buffer Size")
-                .addOption("s", "sendBuf", true, "Server Send Buffer Size")
-                .addOption("a", "receiveAllocatorBuf", true, "Fixed Receive ByteBuf Allocator Buffer Size");
+                .addOption("r", "receiveBufSize", true, "Server Receive Buffer Size")
+                .addOption("s", "sendBufSize", true, "Server Send Buffer Size")
+                .addOption("a", "receiveAllocatorBufSize", true, "Fixed Receive ByteBuf Allocator Buffer Size");
     }
 
-    public static void setup(String[] args) throws ParseException, IOException {
-
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
+    public static void setup(String[] args) throws ParseException {
+        var parser = new DefaultParser();
+        var cmd = parser.parse(options, args);
 
         if (cmd.hasOption("help")) {
             displayHelpAndExit();
         }
 
-        /*
-         * If `config` Parameter is present, parse the config file and load configuration.
-         */
-        if (cmd.getOptionValue("config") != null) {
-            logger.atInfo().log("Using Configuration from Path: " + cmd.getOptionValue("config"));
-
-            // Parse Config File
-            parseConfigFile(cmd.getOptionValue("config"));
-        } else {
-
-            if (cmd.getOptionValue("threads") != null) {
-                Threads = Integer.parseInt(cmd.getOptionValue("threads"));
-            }
-
-            if (cmd.hasOption("ppsStats")) {
-                Stats_PPS = true;
-            }
-
-            if (cmd.hasOption("bpsStats")) {
-                Stats_bPS = true;
-            }
-
-            if (cmd.getOptionValue("update") != null) {
-                GameUpdateInterval = Long.parseLong(cmd.getOptionValue("update"));
-            }
-
-            if (cmd.getOptionValue("gameUpdateTimeout") != null) {
-                GameUpdateSocketTimeout = Integer.parseInt(cmd.getOptionValue("gameUpdateTimeout"));
-            }
-
-            if (cmd.getOptionValue("maxChallengeCode") != null) {
-                MaxChallengeCode = Long.parseLong(cmd.getOptionValue("maxChallengeCode"));
-            }
-
-            if (cmd.getOptionValue("challengeCodeCacheCleaner") != null) {
-                ChallengeCodeCacheCleanerInterval = Long.parseLong(cmd.getOptionValue("challengeCacheCleaner"));
-            }
-
-            if (cmd.getOptionValue("challengeCodeTTL") != null) {
-                ChallengeCodeTTL = Long.parseLong(cmd.getOptionValue("challengeCodeTTL"));
-            }
-
-            if (cmd.getOptionValue("challengeCodeCacheConcurrency") != null) {
-                ChallengeCodeCacheCleanerInterval = Long.parseLong(cmd.getOptionValue("challengeCodeCacheConcurrency"));
-            }
-
-            InetAddress GameServerIPAddress = InetAddress.getLoopbackAddress();
-            if (cmd.getOptionValue("gameip") != null) {
-                GameServerIPAddress = InetAddress.getByName(cmd.getOptionValue("gameip"));
-            }
-
-            int GameServerPort = 27015;
-            if (cmd.getOptionValue("gameport") != null) {
-                GameServerPort = Integer.parseInt(cmd.getOptionValue("gameport"));
-            }
-
-            GameServer = new InetSocketAddress(GameServerIPAddress, GameServerPort);
-
-            InetAddress LocalServerIPAddress = InetAddress.getLoopbackAddress();
-            if (cmd.getOptionValue("bind") != null) {
-                LocalServerIPAddress = InetAddress.getByName(cmd.getOptionValue("bind"));
-            }
-
-            int Port = 27016;
-            if (cmd.getOptionValue("port") != null) {
-                Port = Integer.parseInt(cmd.getOptionValue("port"));
-            }
-
-            LocalServer = new InetSocketAddress(LocalServerIPAddress, Port);
-
-            if (cmd.getOptionValue("receiveBuf") != null) {
-                ReceiveBufferSize = Integer.parseInt(cmd.getOptionValue("receiveBuf"));
-            }
-
-            if (cmd.getOptionValue("sendBuf") != null) {
-                SendBufferSize = Integer.parseInt(cmd.getOptionValue("sendBuf"));
-            }
-
-            if (cmd.getOptionValue("receiveAllocatorBuf") != null) {
-                FixedReceiveAllocatorBufferSize = Integer.parseInt(cmd.getOptionValue("receiveAllocatorBuf"));
-            }
+        try {
+            var configPath = resolveConfigPath(cmd);
+            loadValuesFromConfig(configPath);
+            logger.error(String.format("Loaded config from: %s", configPath));
+        } catch (ConfigNotFoundException e) {
+            loadValuesFromCmdline(cmd);
         }
 
         if (logger.isDebugEnabled()) {
@@ -191,67 +96,131 @@ public final class Config {
         }
     }
 
-    private static void parseConfigFile(String path) throws IOException {
-        Properties Data = new Properties();
-        Data.load(new FileInputStream(path));
+    private static boolean fileExists(String path) {
+        if (path != null) {
+            var configFile = new File(path);
+            return configFile.exists() && !configFile.isDirectory();
+        }
+        return false;
+    }
 
-        // Load all Data
-        Threads = Integer.parseInt(Data.getProperty("Threads", String.valueOf(Threads)));
-        Stats_PPS = Boolean.parseBoolean(Data.getProperty("StatsPPS", String.valueOf(Stats_PPS)));
-        Stats_bPS = Boolean.parseBoolean(Data.getProperty("StatsbPS", String.valueOf(Stats_PPS)));
+    private static String resolveConfigPath(CommandLine cmd) {
+        //If `config` Parameter is present, parse the config file and load configuration.
+        var configPath = cmd.getOptionValue("config");
+        if (!fileExists(configPath)); {
+            //If config parameter is not set or the file doesn't exist, try searching in the app dir.
+            configPath = Paths.get(DEFAULT_CONFIG_NAME).normalize().toAbsolutePath().toString();
 
-        GameUpdateInterval = Long.parseLong(Data.getProperty("GameUpdateInterval", String.valueOf(GameUpdateInterval)));
-        GameUpdateSocketTimeout = Integer.parseInt(Data.getProperty("GameUpdateSocketTimeout", String.valueOf(GameUpdateSocketTimeout)));
+            if (!fileExists(configPath)) {
+                throw new ConfigNotFoundException();
+            }
 
-        MaxChallengeCode = Long.parseLong(Data.getProperty("MaxChallengeCode", String.valueOf(MaxChallengeCode)));
-        ChallengeCodeCacheCleanerInterval = Long.parseLong(Data.getProperty("ChallengeCacheCleanerInterval",
-                String.valueOf(ChallengeCodeCacheCleanerInterval)));
-        ChallengeCodeTTL = Long.parseLong(Data.getProperty("ChallengeCodeTTL", String.valueOf(ChallengeCodeTTL)));
-        ChallengeCodeCacheConcurrency = Integer.parseInt(Data.getProperty("ChallengeCacheConcurrency",
-                String.valueOf(ChallengeCodeCacheConcurrency)));
+            return configPath;
+        }
+    }
 
-        LocalServer = new InetSocketAddress(InetAddress.getByName(Data.getProperty("LocalServerIPAddress",
-                InetAddress.getLoopbackAddress().getHostAddress())), Integer.parseInt(Data.getProperty("LocalServerPort",
-                "27016")));
-        GameServer  = new InetSocketAddress(InetAddress.getByName(Data.getProperty("GameServerIPAddress",
-                InetAddress.getLoopbackAddress().getHostAddress())), Integer.parseInt(Data.getProperty("GameServerPort",
-                "27015")));
+    private static void loadValuesFromConfig(String path) {
+        try (var fis = new FileInputStream(path)) {
+            var properties = new Properties();
+            properties.load(fis);
+            var parser = new PropertiesValueParser(properties);
+            loadValues(parser);
+            properties.clear();
+        } catch (IOException e) {
+            throw new InvalidConfigPathException(path, e);
+        }
+    }
 
-        ReceiveBufferSize = Integer.parseInt(Data.getProperty("ReceiveBufferSize", String.valueOf(ReceiveBufferSize)));
-        SendBufferSize = Integer.parseInt(Data.getProperty("SendBufferSize", String.valueOf(SendBufferSize)));
-        FixedReceiveAllocatorBufferSize = Integer.parseInt(Data.getProperty("FixedReceiveAllocatorBufferSize",
-                String.valueOf(FixedReceiveAllocatorBufferSize)));
+    private static void loadValuesFromCmdline(CommandLine commandLine) {
+        var parser = new CmdValueParser(commandLine);
+        loadValues(parser);
+    }
 
-        Data.clear(); // Clear Properties
+    private static void loadValues(ValueParser parser) {
+        threads = getIntProperty(parser, "threads", 2);
+        stats_PPS = getBooleanProperty(parser, "ppsStats", true);
+        stats_bPS = getBooleanProperty(parser, "bpsStats", true);
+        gameUpdateInterval = getLongProperty(parser, "gameUpdateInterval", 2000);
+        gameUpdateSocketTimeout = getIntProperty(parser, "gameUpdateTimeout", 1000);
+        maxChallengeCodes = getLongProperty(parser, "maxChallengeCodes", 100000);
+        challengeCodeCacheCleanerInterval = getLongProperty(parser, "challengeCacheCleanerInterval", 1000);
+        challengeCodeTTL = getLongProperty(parser, "challengeTTL", 5000);
+        challengeCodeCacheConcurrency = getIntProperty(parser, "challengeCacheConcurrency", 8);
+
+        var gameServerAddress = getIPAddressProperty(parser, "gameIp", () -> InetAddress.getLoopbackAddress());
+        var gameServerPort = getIntProperty(parser, "gamePort", 27015);
+
+        gameServer = new InetSocketAddress(gameServerAddress, gameServerPort);
+
+        var localServerAddress = getIPAddressProperty(parser, "bind", () -> InetAddress.getLoopbackAddress());
+        var localPort = getIntProperty(parser, "port", 9110);
+
+        localServer = new InetSocketAddress(localServerAddress, localPort);
+
+        receiveBufferSize = getIntProperty(parser, "receiveBufSize", 65535);
+        sendBufferSize = getIntProperty(parser,"sendBufSize", 65535);
+        fixedReceiveAllocatorBufferSize = getIntProperty(parser, "receiveAllocatorBufSize", 65535);
+    }
+
+    private static int getIntProperty(ValueParser parser, String key, int defaultValue) {
+        return Optional.ofNullable(parser.getValue(key))
+                .map(Integer::parseInt)
+                .orElse(defaultValue);
+    }
+
+    private static long getLongProperty(ValueParser parser, String key, long defaultValue) {
+        return Optional.ofNullable(parser.getValue(key))
+                .map(Long::parseLong)
+                .orElse(defaultValue);
+    }
+
+    private static boolean getBooleanProperty(ValueParser parser, String key, boolean defaultValue) {
+        return Optional.ofNullable(parser.getValue(key))
+                .map(Boolean::parseBoolean)
+                .orElse(defaultValue);
+    }
+
+    private static InetAddress getIPAddressProperty(ValueParser parser, String key, Supplier defaultValue) {
+        return Optional.ofNullable(parser.getValue(key))
+                .map(Config::getIpByName)
+                .orElseGet(defaultValue);
+    }
+
+    private static InetAddress getIpByName(String ip) {
+        try {
+            return InetAddress.getByName(ip);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void displayConfig() {
         logger.atDebug().log("----------------- CONFIGURATION -----------------");
-        logger.atDebug().log("Threads: " + Threads);
-        logger.atDebug().log("PPS: " + Stats_PPS);
-        logger.atDebug().log("bPS: " + Stats_bPS);
+        logger.atDebug().log("Threads: " + threads);
+        logger.atDebug().log("PPS: " + stats_PPS);
+        logger.atDebug().log("bPS: " + stats_bPS);
 
 
-        logger.atDebug().log("GameUpdateInterval: " + GameUpdateInterval);
-        logger.atDebug().log("GameUpdateSocketTimeout: " + GameUpdateSocketTimeout);
+        logger.atDebug().log("GameUpdateInterval: " + gameUpdateInterval);
+        logger.atDebug().log("GameUpdateSocketTimeout: " + gameUpdateSocketTimeout);
 
-        logger.atDebug().log("MaxChallengeCode: " + MaxChallengeCode);
-        logger.atDebug().log("ChallengeCodeCacheCleanerInterval: " + ChallengeCodeCacheCleanerInterval);
-        logger.atDebug().log("ChallengeCodeCacheConcurrency: " + ChallengeCodeCacheConcurrency);
+        logger.atDebug().log("MaxChallengeCode: " + maxChallengeCodes);
+        logger.atDebug().log("ChallengeCodeCacheCleanerInterval: " + challengeCodeCacheCleanerInterval);
+        logger.atDebug().log("ChallengeCodeCacheConcurrency: " + challengeCodeCacheConcurrency);
 
-        logger.atDebug().log("LocalServerIPAddress: " + LocalServer.getAddress().getHostAddress());
-        logger.atDebug().log("LocalServerPort: " + LocalServer.getPort());
-        logger.atDebug().log("GameServerIPAddress: " + GameServer.getAddress().getHostAddress());
-        logger.atDebug().log("GameServerPort: " + GameServer.getPort());
+        logger.atDebug().log("LocalServerIPAddress: " + localServer.getAddress().getHostAddress());
+        logger.atDebug().log("LocalServerPort: " + localServer.getPort());
+        logger.atDebug().log("GameServerIPAddress: " + gameServer.getAddress().getHostAddress());
+        logger.atDebug().log("GameServerPort: " + gameServer.getPort());
 
-        logger.atDebug().log("ReceiveBufferSize: " + ReceiveBufferSize);
-        logger.atDebug().log("SendBufferSize: " + SendBufferSize);
-        logger.atDebug().log("FixedReceiveAllocatorBufferSize: " + FixedReceiveAllocatorBufferSize);
+        logger.atDebug().log("ReceiveBufferSize: " + receiveBufferSize);
+        logger.atDebug().log("SendBufferSize: " + sendBufferSize);
+        logger.atDebug().log("FixedReceiveAllocatorBufferSize: " + fixedReceiveAllocatorBufferSize);
         logger.atDebug().log("-------------------------------------------------");
     }
 
     private static void displayHelpAndExit() {
-        HelpFormatter helpFormatter = new HelpFormatter();
+        var helpFormatter = new HelpFormatter();
         helpFormatter.printHelp("java -jar FILENAME <USAGES ARGUMENTS>", options);
 
         System.exit(0);

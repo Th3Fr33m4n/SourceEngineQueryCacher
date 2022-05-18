@@ -6,7 +6,6 @@ import com.aayushatharva.sourcecenginequerycacher.utils.ByteBufUtils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
-import org.checkerframework.checker.units.qual.C;
 
 import java.time.Duration;
 
@@ -31,9 +30,9 @@ public final class CacheHub {
      * Challenge Code Cache
      */
     public static final Cache<String, String> CHALLENGE_CACHE = CacheBuilder.newBuilder()
-            .maximumSize(Config.MaxChallengeCode)
-            .expireAfterWrite(Duration.ofMillis(Config.ChallengeCodeTTL))
-            .concurrencyLevel(Config.ChallengeCodeCacheConcurrency)
+            .maximumSize(Config.maxChallengeCodes)
+            .expireAfterWrite(Duration.ofMillis(Config.challengeCodeTTL))
+            .concurrencyLevel(Config.challengeCodeCacheConcurrency)
             .build();
 
     private static CacheCleaner cacheCleaner;

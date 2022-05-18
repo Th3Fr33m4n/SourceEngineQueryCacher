@@ -2,7 +2,6 @@ package com.aayushatharva.sourcecenginequerycacher.constants;
 
 import com.aayushatharva.sourcecenginequerycacher.Main;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 public final class Packets {
 
