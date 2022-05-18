@@ -4,6 +4,7 @@ import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
 import com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer.PlayerClient;
+import com.aayushatharva.sourcecenginequerycacher.gameserver.a2srules.RulesClient;
 import com.aayushatharva.sourcecenginequerycacher.server.Handler;
 import com.aayushatharva.sourcecenginequerycacher.server.Stats;
 import io.netty.bootstrap.Bootstrap;
@@ -31,6 +32,7 @@ public final class Main {
     private static Stats stats;
     private static InfoClient infoClient;
     private static PlayerClient playerClient;
+    private static RulesClient rulesClient;
 
     public static void main(String[] args) {
         try {
@@ -99,6 +101,7 @@ public final class Main {
         stats = new Stats();
         infoClient = new InfoClient("A2SInfoClient");
         playerClient = new PlayerClient("A2SPlayerClient");
+        rulesClient = new RulesClient("A2SRulesClient");
     }
 
     private static void start() {
@@ -106,6 +109,7 @@ public final class Main {
         CacheHub.init();
         infoClient.start();
         playerClient.start();
+        rulesClient.start();
     }
 
     /**
@@ -115,6 +119,7 @@ public final class Main {
         var future = eventLoopGroup.shutdownGracefully();
         infoClient.shutdown();
         playerClient.shutdown();
+        rulesClient.shutdown();
         stats.shutdown();
         CacheHub.flushAndClose();
         future.get();

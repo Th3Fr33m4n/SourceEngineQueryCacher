@@ -21,7 +21,7 @@ final class PlayerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         if (matchesA2SChallengeResponse(datagramPacket)) {
             var responseBuf = ctx.alloc().buffer()
                     .writeBytes(Packets.A2S_PLAYER_REQUEST_HEADER.retainedDuplicate())
-                    .writeBytes(datagramPacket.content().slice(5, 4));
+                    .writeBytes(datagramPacket.content().slice(Packets.A2S_HEADER_LENGTH, Packets.A2S_CHALLENGE_LENGTH));
 
             ctx.writeAndFlush(responseBuf);
         } else if (matchesA2SPlayerResponse(datagramPacket)) {

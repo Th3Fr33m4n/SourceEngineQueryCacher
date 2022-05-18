@@ -6,6 +6,7 @@ import com.aayushatharva.sourcecenginequerycacher.utils.ByteBufUtils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
+import org.checkerframework.checker.units.qual.C;
 
 import java.time.Duration;
 
@@ -22,6 +23,11 @@ public final class CacheHub {
     public static final ByteBuf A2S_PLAYER = Main.BYTE_BUF_ALLOCATOR.buffer();
 
     /**
+     * <p> ByteBuf for `A2S_RULES` Packet. </p>
+     */
+    public static final ByteBuf A2S_RULES = Main.BYTE_BUF_ALLOCATOR.buffer();
+
+    /**
      * Challenge Code Cache
      */
     public static final Cache<String, String> CHALLENGE_CACHE = CacheBuilder.newBuilder()
@@ -35,7 +41,9 @@ public final class CacheHub {
         var isAnyCacheEmpty = CacheHub.A2S_INFO == null ||
                 CacheHub.A2S_INFO.readableBytes() == 0 ||
                 CacheHub.A2S_PLAYER == null ||
-                CacheHub.A2S_PLAYER.readableBytes() == 0;
+                CacheHub.A2S_PLAYER.readableBytes() == 0 ||
+                CacheHub.A2S_RULES == null ||
+                CacheHub.A2S_RULES.readableBytes() == 0;
         return !isAnyCacheEmpty;
     }
 
@@ -48,6 +56,7 @@ public final class CacheHub {
         CacheHub.CHALLENGE_CACHE.cleanUp();
         ByteBufUtils.safeRelease(CacheHub.A2S_INFO);
         ByteBufUtils.safeRelease(CacheHub.A2S_PLAYER);
+        ByteBufUtils.safeRelease(CacheHub.A2S_RULES);
     }
 
     public static void init() {
