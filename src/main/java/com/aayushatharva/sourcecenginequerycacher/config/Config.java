@@ -43,7 +43,7 @@ public final class Config {
     /**
      * Challenge Code Validity
      */
-    public static Long ChallengeCodeTTL = 5000L;
+    public static Long ChallengeCodeTTL = 60000L;
 
     /**
      * Challenge Code Cache Concurrency

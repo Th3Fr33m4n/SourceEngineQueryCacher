@@ -15,8 +15,7 @@ import java.util.Arrays;
 import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_INFO_REQUEST_LENGTH;
 import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_PLAYER_REQUEST_LENGTH;
 import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
-import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerChallengeRequest;
-import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerRequestHeader;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
 import static io.netty.channel.ChannelHandler.Sharable;
 
 @Sharable
@@ -41,17 +40,17 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
                 sendA2SInfoResponse(ctx, datagramPacket);
                 return;
             } else if (matchesA2SPlayerRequestHeader(datagramPacket)) {
-
-                /*
-                 * 1. Packets equals to `A2S_PLAYER_CHALLENGE_REQUEST_1` or `A2S_PLAYER_CHALLENGE_REQUEST_2`
-                 * then we'll send response of A2S_Player Challenge Packet.
-                 *
-                 * 2. Validate A2S_Player Challenge Response and send A2S_Player Packet.
-                 */
                 if (matchesA2SPlayerChallengeRequest(datagramPacket)) {
                     sendA2SChallenge(ctx, datagramPacket);
                 } else {
-                    sendA2SPlayerResponse(ctx, datagramPacket, ByteBufUtil.getBytes(datagramPacket.content()));
+                    sendA2SPlayerResponse(ctx, datagramPacket);
+                }
+                return;
+            } else if (matchesA2SRulesRequestHeader(datagramPacket)) {
+                if (matchesA2SRulesChallengeRequest(datagramPacket)) {
+                    sendA2SChallenge(ctx, datagramPacket);
+                } else {
+                    sendA2SRulesResponse(ctx, datagramPacket);
                 }
                 return;
             }
@@ -92,18 +91,39 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         ctx.writeAndFlush(new DatagramPacket(byteBuf, datagramPacket.sender()));
     }
 
-    private void sendA2SPlayerResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket, byte[] Packet) {
+    private void sendA2SPlayerResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
         // Look for Challenge Code in Cache and load Client IP Address Value from it.
-        String ipAddressOfClient = CacheHub.CHALLENGE_CACHE.getIfPresent(toHexString(Arrays.copyOfRange(Packet, 5, 9)));
+        var challenge = toHexString(getChallengeFromA2SRequest(datagramPacket));
+        var ipAddressOfClient = CacheHub.CHALLENGE_CACHE.getIfPresent(challenge);
 
         // If Client IP Address Value is not NULL it means we found the Challenge and now we'll validate it.
         if (ipAddressOfClient != null) {
             // Invalidate Cache since we found Challenge
-            CacheHub.CHALLENGE_CACHE.invalidate(toHexString(Arrays.copyOfRange(Packet, 5, 9)));
+            CacheHub.CHALLENGE_CACHE.invalidate(challenge);
 
             // Match Client Current IP Address against Cache Stored Client IP Address
             if (ipAddressOfClient.equals(datagramPacket.sender().getAddress().getHostAddress())) {
                 ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_PLAYER.retainedDuplicate(), datagramPacket.sender()));
+            }
+        } else {
+            logger.debug("Invalid Challenge Code received from {}:{} [REQUEST DROPPED]",
+                    datagramPacket.sender().getAddress().getHostAddress(), datagramPacket.sender().getPort());
+        }
+    }
+
+    private void sendA2SRulesResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        // Look for Challenge Code in Cache and load Client IP Address Value from it.
+        var challenge = toHexString(getChallengeFromA2SRequest(datagramPacket));
+        var ipAddressOfClient = CacheHub.CHALLENGE_CACHE.getIfPresent(challenge);
+
+        // If Client IP Address Value is not NULL it means we found the Challenge and now we'll validate it.
+        if (ipAddressOfClient != null) {
+            // Invalidate Cache since we found Challenge
+            CacheHub.CHALLENGE_CACHE.invalidate(challenge);
+
+            // Match Client Current IP Address against Cache Stored Client IP Address
+            if (ipAddressOfClient.equals(datagramPacket.sender().getAddress().getHostAddress())) {
+                ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_RULES.retainedDuplicate(), datagramPacket.sender()));
             }
         } else {
             logger.debug("Invalid Challenge Code received from {}:{} [REQUEST DROPPED]",
