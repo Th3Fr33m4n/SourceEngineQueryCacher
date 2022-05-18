@@ -27,16 +27,16 @@ public final class RulesClient extends Thread {
                     .group(Main.eventLoopGroup)
                     .channelFactory(EpollDatagramChannel::new)
                     .option(ChannelOption.ALLOCATOR, Main.BYTE_BUF_ALLOCATOR)
-                    .option(ChannelOption.SO_SNDBUF, Config.SendBufferSize)
-                    .option(ChannelOption.SO_RCVBUF, Config.ReceiveBufferSize)
-                    .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Config.FixedReceiveAllocatorBufferSize))
+                    .option(ChannelOption.SO_SNDBUF, Config.sendBufferSize)
+                    .option(ChannelOption.SO_RCVBUF, Config.receiveBufferSize)
+                    .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Config.fixedReceiveAllocatorBufferSize))
                     .handler(new RulesHandler());
 
-            var channel = bootstrap.connect(Config.GameServer).sync().channel();
+            var channel = bootstrap.connect(Config.gameServer).sync().channel();
 
             while (keepRunning) {
                 channel.writeAndFlush(Packets.A2S_RULES_CHALLENGE_REQUEST_2.retainedDuplicate()).sync();
-                sleep(Config.GameUpdateInterval);
+                sleep(Config.gameUpdateInterval);
             }
 
             channel.closeFuture().sync();

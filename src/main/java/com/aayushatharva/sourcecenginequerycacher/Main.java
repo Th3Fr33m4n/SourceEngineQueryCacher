@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 
 public final class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
-
     public static final ByteBufAllocator BYTE_BUF_ALLOCATOR = PooledByteBufAllocator.DEFAULT;
     public static EventLoopGroup eventLoopGroup;
     private static Stats stats;
@@ -45,7 +44,7 @@ public final class Main {
                 System.exit(1);
             }
 
-            eventLoopGroup = new EpollEventLoopGroup(Config.Threads);
+            eventLoopGroup = new EpollEventLoopGroup(Config.threads);
             bindChannelsAndSync(bootstrap());
             initComponents();
             start();
@@ -59,8 +58,8 @@ public final class Main {
                 .group(eventLoopGroup)
                 .channelFactory(() -> new EpollDatagramChannel(InternetProtocolFamily.IPv4))
                 .option(ChannelOption.ALLOCATOR, BYTE_BUF_ALLOCATOR)
-                .option(ChannelOption.SO_SNDBUF, Config.SendBufferSize)
-                .option(ChannelOption.SO_RCVBUF, Config.ReceiveBufferSize)
+                .option(ChannelOption.SO_SNDBUF, Config.sendBufferSize)
+                .option(ChannelOption.SO_RCVBUF, Config.receiveBufferSize)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(UnixChannelOption.SO_REUSEPORT, true)
                 .option(EpollChannelOption.UDP_GRO, true) // Enable UDP GRO
@@ -70,10 +69,10 @@ public final class Main {
     private static void bindChannelsAndSync(Bootstrap bootstrap) throws InterruptedException {
         var channels = new ArrayList<ChannelFuture>();
 
-        for (int i = 0; i < Config.Threads; i++) {
+        for (int i = 0; i < Config.threads; i++) {
             var channelFuture = bootstrap.bind(
-                            Config.LocalServer.getAddress(),
-                            Config.LocalServer.getPort())
+                            Config.localServer.getAddress(),
+                            Config.localServer.getPort())
                     .addListener((ChannelFutureListener)Main::defaultListener);
 
             channels.add(channelFuture);

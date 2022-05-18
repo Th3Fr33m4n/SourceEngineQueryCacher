@@ -11,8 +11,6 @@ import io.netty.channel.socket.DatagramPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
-
 import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.*;
 import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
 import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
@@ -32,26 +30,16 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
             return;
         }
 
-        /*
-         * Packet size not matching any known request will be dropped.
-         */
+        //Packet size not matching any known request will be dropped.
         if (hasValidLength(datagramPacket)) {
             if (ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, datagramPacket.content())) {
-                sendA2SInfoResponse(ctx, datagramPacket);
+                handleInfoRequest(ctx, datagramPacket);
                 return;
             } else if (matchesA2SPlayerRequestHeader(datagramPacket)) {
-                if (matchesA2SPlayerChallengeRequest(datagramPacket)) {
-                    sendA2SChallenge(ctx, datagramPacket);
-                } else {
-                    sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_PLAYER.retainedDuplicate());
-                }
+                handlePlayerRequest(ctx, datagramPacket);
                 return;
             } else if (matchesA2SRulesRequestHeader(datagramPacket)) {
-                if (matchesA2SRulesChallengeRequest(datagramPacket)) {
-                    sendA2SChallenge(ctx, datagramPacket);
-                } else {
-                    sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_RULES.retainedDuplicate());
-                }
+                handleRulesRequest(ctx, datagramPacket);
                 return;
             }
         }
@@ -59,12 +47,32 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         dropLog(datagramPacket);
     }
 
+    private void handleInfoRequest(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        sendA2SInfoResponse(ctx, datagramPacket);
+    }
+
+    private void handlePlayerRequest(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        if (matchesA2SPlayerChallengeRequest(datagramPacket)) {
+            sendA2SChallenge(ctx, datagramPacket);
+        } else {
+            sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_PLAYER.retainedDuplicate());
+        }
+    }
+
+    private void handleRulesRequest(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        if (matchesA2SRulesChallengeRequest(datagramPacket)) {
+            sendA2SChallenge(ctx, datagramPacket);
+        } else {
+            sendA2SResponse(ctx, datagramPacket, CacheHub.A2S_RULES.retainedDuplicate());
+        }
+    }
+
     private void incrementStats(DatagramPacket packet) {
-        if (Config.Stats_PPS) {
+        if (Config.stats_PPS) {
             Stats.PPS.incrementAndGet();
         }
 
-        if (Config.Stats_bPS) {
+        if (Config.stats_bPS) {
             Stats.BPS.addAndGet(packet.content().readableBytes());
         }
     }

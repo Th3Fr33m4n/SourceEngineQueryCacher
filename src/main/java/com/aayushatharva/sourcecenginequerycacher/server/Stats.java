@@ -21,22 +21,20 @@ public final class Stats extends Thread {
     @Override
     public void run() {
 
-        logger.info("Starting Stats, PPS Enabled: " + Config.Stats_PPS + ", bPS Enabled: " + Config.Stats_bPS);
+        logger.info("Starting Stats, PPS Enabled: " + Config.stats_PPS + ", bPS Enabled: " + Config.stats_bPS);
 
         while (keepRunning) {
 
-            String timestamp = getTimestamp();
-
-            if (Config.Stats_PPS && Config.Stats_bPS) {
-                System.out.print("[" + timestamp + "] [STATS] p/s: " + PPS.getAndSet(0L));
+            if (Config.stats_PPS && Config.stats_bPS) {
+                System.out.print("[" + getTimestamp() + "] [STATS] p/s: " + PPS.getAndSet(0L));
                 System.out.println(" | b/s: " + calculateBps());
             } else {
-                if (Config.Stats_PPS) {
-                    System.out.println("[" + timestamp + "] [STATS] p/s: " + PPS.getAndSet(0L) + " | b/s: 0");
+                if (Config.stats_PPS) {
+                    System.out.println("[" + getTimestamp() + "] [STATS] p/s: " + PPS.getAndSet(0L) + " | b/s: 0");
                 }
 
-                if (Config.Stats_bPS) {
-                    System.out.println("[" + timestamp + "] [STATS] p/s: 0 | b/s: " + calculateBps());
+                if (Config.stats_bPS) {
+                    System.out.println("[" + getTimestamp() + "] [STATS] p/s: 0 | b/s: " + calculateBps());
                 }
             }
 

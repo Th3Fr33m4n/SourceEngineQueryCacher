@@ -9,7 +9,8 @@ import io.netty.channel.socket.DatagramPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SChallengeResponse;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SRulesResponse;
 
 final class RulesHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
