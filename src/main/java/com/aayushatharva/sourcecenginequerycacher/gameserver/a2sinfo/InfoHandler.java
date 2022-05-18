@@ -1,6 +1,6 @@
 package com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo;
 
-import com.aayushatharva.sourcecenginequerycacher.utils.CacheHub;
+import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;

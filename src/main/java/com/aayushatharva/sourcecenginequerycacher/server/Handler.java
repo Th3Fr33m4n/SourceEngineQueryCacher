@@ -1,11 +1,9 @@
-package com.aayushatharva.sourcecenginequerycacher;
+package com.aayushatharva.sourcecenginequerycacher.server;
 
-import com.aayushatharva.sourcecenginequerycacher.utils.CacheHub;
-import com.aayushatharva.sourcecenginequerycacher.utils.Config;
-import com.aayushatharva.sourcecenginequerycacher.utils.Packets;
-import io.netty.buffer.ByteBuf;
+import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
+import com.aayushatharva.sourcecenginequerycacher.config.Config;
+import com.aayushatharva.sourcecenginequerycacher.constants.Packets;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -13,46 +11,36 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
-import java.util.Random;
-import java.util.SplittableRandom;
 
-@ChannelHandler.Sharable
-final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
+import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_INFO_REQUEST_LENGTH;
+import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_PLAYER_REQUEST_LENGTH;
+import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerChallengeRequest;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.matchesA2SPlayerRequestHeader;
+import static io.netty.channel.ChannelHandler.Sharable;
+
+@Sharable
+public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
 
     private static final Logger logger = LogManager.getLogger(Handler.class);
-    private static final SplittableRandom RANDOM = new SplittableRandom();
 
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        incrementStats(datagramPacket);
 
-        if (Config.Stats_PPS) {
-            Stats.PPS.incrementAndGet();
-        }
-
-        if (Config.Stats_bPS) {
-            Stats.BPS.addAndGet(datagramPacket.content().readableBytes());
-        }
-
-        /*
-         * If A2S_INFO or A2S_PLAYER is null or 0 bytes, drop request because we've nothing to reply.
-         */
-        if (CacheHub.A2S_INFO == null || CacheHub.A2S_INFO.readableBytes() == 0 ||
-                CacheHub.A2S_PLAYER == null || CacheHub.A2S_PLAYER.readableBytes() == 0) {
+        if (!CacheHub.isComplete()) {
             logger.error("Dropping query request because Cache is not ready. A2S_INFO: {}, A2S_PLAYER: {}",
                     CacheHub.A2S_INFO, CacheHub.A2S_PLAYER);
             return;
         }
 
         /*
-         * Packet size of 25 bytes and 9 bytes only will be processed rest will dropped.
-         *
-         * A2S_INFO = 25 Bytes
-         * A2S_Player = 9 Bytes
+         * Packet size not matching any known request will be dropped.
          */
-        if (datagramPacket.content().readableBytes() == 25 || datagramPacket.content().readableBytes() == 9) {
+        if (hasValidLength(datagramPacket)) {
             if (ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, datagramPacket.content())) {
-                ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_INFO.retainedDuplicate(), datagramPacket.sender()));
+                sendA2SInfoResponse(ctx, datagramPacket);
                 return;
-            } else if (ByteBufUtil.equals(Packets.A2S_PLAYER_REQUEST_HEADER, datagramPacket.content().slice(0, 5))) {
+            } else if (matchesA2SPlayerRequestHeader(datagramPacket)) {
 
                 /*
                  * 1. Packets equals to `A2S_PLAYER_CHALLENGE_REQUEST_1` or `A2S_PLAYER_CHALLENGE_REQUEST_2`
@@ -60,9 +48,8 @@ final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
                  *
                  * 2. Validate A2S_Player Challenge Response and send A2S_Player Packet.
                  */
-                if (ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_1) ||
-                        ByteBufUtil.equals(datagramPacket.content(), Packets.A2S_PLAYER_CHALLENGE_REQUEST_2)) {
-                    sendA2SPlayerChallenge(ctx, datagramPacket);
+                if (matchesA2SPlayerChallengeRequest(datagramPacket)) {
+                    sendA2SChallenge(ctx, datagramPacket);
                 } else {
                     sendA2SPlayerResponse(ctx, datagramPacket, ByteBufUtil.getBytes(datagramPacket.content()));
                 }
@@ -73,17 +60,34 @@ final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
         dropLog(datagramPacket);
     }
 
-    private void sendA2SPlayerChallenge(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
-        // Generate Random Data of 4 Bytes
-        byte[] challenge = new byte[4];
-        RANDOM.nextBytes(challenge);
+    private void incrementStats(DatagramPacket packet) {
+        if (Config.Stats_PPS) {
+            Stats.PPS.incrementAndGet();
+        }
 
+        if (Config.Stats_bPS) {
+            Stats.BPS.addAndGet(packet.content().readableBytes());
+        }
+    }
+
+    private boolean hasValidLength(DatagramPacket packet) {
+        var contentLength = packet.content().readableBytes();
+        return contentLength == A2S_INFO_REQUEST_LENGTH ||
+                contentLength == A2S_PLAYER_REQUEST_LENGTH;
+    }
+
+    private void sendA2SInfoResponse(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        ctx.writeAndFlush(new DatagramPacket(CacheHub.A2S_INFO.retainedDuplicate(), datagramPacket.sender()));
+    }
+
+    private void sendA2SChallenge(ChannelHandlerContext ctx, DatagramPacket datagramPacket) {
+        var challenge = ChallengeGenerator.generateRandomChallenge();
         // Add Challenge to Cache
         CacheHub.CHALLENGE_CACHE.put(toHexString(challenge), datagramPacket.sender().getAddress().getHostAddress());
 
         // Send A2S PLAYER CHALLENGE Packet
-        ByteBuf byteBuf = ctx.alloc().buffer();
-        byteBuf.writeBytes(Packets.A2S_PLAYER_CHALLENGE_RESPONSE.retainedDuplicate());
+        var byteBuf = ctx.alloc().buffer();
+        byteBuf.writeBytes(Packets.A2S_CHALLENGE_RESPONSE.retainedDuplicate());
         byteBuf.writeBytes(challenge);
         ctx.writeAndFlush(new DatagramPacket(byteBuf, datagramPacket.sender()));
     }
@@ -115,21 +119,5 @@ final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Caught Error", cause);
-    }
-
-    /**
-     * Convert Byte Array into Hex String
-     *
-     * @param bytes Byte Array
-     * @return Hex String
-     */
-    private String toHexString(final byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = "0123456789ABCDEF".toCharArray()[v >>> 4];
-            hexChars[j * 2 + 1] = "0123456789ABCDEF".toCharArray()[v & 0x0F];
-        }
-        return new String(hexChars);
     }
 }
