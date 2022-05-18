@@ -86,7 +86,7 @@ public final class Config {
         try {
             var configPath = resolveConfigPath(cmd);
             loadValuesFromConfig(configPath);
-            logger.error(String.format("Loaded config from: %s", configPath));
+            logger.debug(String.format("Loaded config from: %s", configPath));
         } catch (ConfigNotFoundException e) {
             loadValuesFromCmdline(cmd);
         }
@@ -199,7 +199,6 @@ public final class Config {
         logger.atDebug().log("Threads: " + threads);
         logger.atDebug().log("PPS: " + stats_PPS);
         logger.atDebug().log("bPS: " + stats_bPS);
-
 
         logger.atDebug().log("GameUpdateInterval: " + gameUpdateInterval);
         logger.atDebug().log("GameUpdateSocketTimeout: " + gameUpdateSocketTimeout);

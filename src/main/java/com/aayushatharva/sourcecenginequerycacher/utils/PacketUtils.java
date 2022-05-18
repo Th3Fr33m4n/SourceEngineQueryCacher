@@ -11,6 +11,10 @@ import static com.aayushatharva.sourcecenginequerycacher.constants.Packets.A2S_H
 
 public class PacketUtils {
 
+    public static boolean matchesA2SInfoRequest(DatagramPacket packet) {
+        return ByteBufUtil.equals(Packets.A2S_INFO_REQUEST, packet.content());
+    }
+
     public static boolean matchesA2SPlayerChallengeRequest(DatagramPacket packet) {
         var content = packet.content();
         return ByteBufUtil.equals(content, Packets.A2S_PLAYER_CHALLENGE_REQUEST_1) ||
