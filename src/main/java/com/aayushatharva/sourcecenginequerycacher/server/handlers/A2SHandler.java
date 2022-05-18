@@ -9,7 +9,7 @@ import io.netty.channel.socket.DatagramPacket;
 import org.apache.logging.log4j.Logger;
 
 import static com.aayushatharva.sourcecenginequerycacher.utils.HexUtils.toHexString;
-import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.*;
+import static com.aayushatharva.sourcecenginequerycacher.utils.PacketUtils.getChallengeFromA2SRequest;
 
 public abstract class A2SHandler {
 
