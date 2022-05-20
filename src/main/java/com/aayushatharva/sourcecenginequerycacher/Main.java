@@ -1,6 +1,7 @@
 package com.aayushatharva.sourcecenginequerycacher;
 
 import com.aayushatharva.sourcecenginequerycacher.cache.CacheHub;
+import com.aayushatharva.sourcecenginequerycacher.config.CommandLineArgs;
 import com.aayushatharva.sourcecenginequerycacher.config.Config;
 import com.aayushatharva.sourcecenginequerycacher.gameserver.a2sinfo.InfoClient;
 import com.aayushatharva.sourcecenginequerycacher.gameserver.a2splayer.PlayerClient;
@@ -17,6 +18,8 @@ import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.channel.unix.UnixChannelOption;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,14 +38,12 @@ public final class Main {
 
     public static void main(String[] args) {
         try {
-            Config.setup(args);
+            var cmd = CommandLineArgs.parse(args);
+            checkAndShowHelp(cmd);
+            Config.setup(cmd);
 
             // Use Epoll when available
-            if (!Epoll.isAvailable()) {
-                // Epoll is requested but Epoll is not available so we'll throw error and shut down.
-                System.err.println("Epoll Transport is not available, shutting down...");
-                System.exit(1);
-            }
+            checkEpollAvailability();
 
             eventLoopGroup = new EpollEventLoopGroup(Config.threads);
             bindChannelsAndSync(bootstrap());
@@ -50,6 +51,22 @@ public final class Main {
             start();
         } catch (Exception ex) {
             logger.atError().withThrowable(ex).log("Error while Initializing");
+        }
+    }
+
+    private static void checkAndShowHelp(CommandLine cmd) {
+        if (cmd.hasOption("help")) {
+            var helpFormatter = new HelpFormatter();
+            helpFormatter.printHelp("java -jar FILENAME <USAGES ARGUMENTS>", CommandLineArgs.get());
+            System.exit(0);
+        }
+    }
+
+    private static void checkEpollAvailability() {
+        if (!Epoll.isAvailable()) {
+            // Epoll is requested but Epoll is not available so we'll throw error and shut down.
+            System.err.println("Epoll Transport is not available, shutting down...");
+            System.exit(1);
         }
     }
 
