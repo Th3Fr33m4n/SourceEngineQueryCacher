@@ -5,7 +5,8 @@ import com.aayushatharva.sourcecenginequerycacher.config.parsers.PropertiesValue
 import com.aayushatharva.sourcecenginequerycacher.config.parsers.ValueParser;
 import com.aayushatharva.sourcecenginequerycacher.exceptions.ConfigNotFoundException;
 import com.aayushatharva.sourcecenginequerycacher.exceptions.InvalidConfigPathException;
-import org.apache.commons.cli.*;
+import lombok.SneakyThrows;
+import org.apache.commons.cli.CommandLine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +24,7 @@ public final class Config {
 
     private static final Logger logger = LogManager.getLogger(Config.class);
     private static final String DEFAULT_CONFIG_NAME = "./Cacher.conf";
-    private static final Options options;
+
     public static Integer threads;
     public static Long gameUpdateInterval;
     public static Integer gameUpdateSocketTimeout;
@@ -45,44 +46,7 @@ public final class Config {
     public static boolean stats_PPS;
     public static boolean stats_bPS;
 
-    static {
-        options = new Options()
-                /*General Configuration*/
-                .addOption("h", "help", false, "Display Usages")
-                .addOption("c", "config", true, "Configuration File Path")
-                .addOption("w", "threads", true, "Number of Threads")
-                .addOption("p", "ppsStats", false, "Enable Packets per Second Stats")
-                .addOption("b", "bpsStats", false, "Enable Bits per Second Stats")
-
-                .addOption("gameUpdateInterval", true, "Game Server Update rate in Milliseconds")
-                .addOption("gameUpdateTimeout", true, "Game Server Update Socket Timeout in Milliseconds")
-
-                /* Challenge Code */
-                .addOption("maxChallengeCodes", true, "Maximum Challenge Codes to be saved")
-                .addOption("challengeCacheCleanerInterval", true, "Challenge Code Cache Cleaner Interval in Milliseconds")
-                .addOption("challengeTTL", true, "Maximum Validity of Challenge Code in Milliseconds")
-                .addOption("challengeCacheConcurrency", true, "Challenge Code Cache Concurrency")
-
-                /* IP Addresses and Ports */
-                .addOption("gameIp", true, "Game Server IP Address")
-                .addOption("gamePort", true, "Game Server Port")
-                .addOption("bind", true, "Local Server IP Address on which Cacher Server will bind and listen")
-                .addOption("port", true, "Local Server Port on which Cacher Server will bind and listen")
-
-                /* Buffers */
-                .addOption("r", "receiveBufSize", true, "Server Receive Buffer Size")
-                .addOption("s", "sendBufSize", true, "Server Send Buffer Size")
-                .addOption("a", "receiveAllocatorBufSize", true, "Fixed Receive ByteBuf Allocator Buffer Size");
-    }
-
-    public static void setup(String[] args) throws ParseException {
-        var parser = new DefaultParser();
-        var cmd = parser.parse(options, args);
-
-        if (cmd.hasOption("help")) {
-            displayHelpAndExit();
-        }
-
+    public static void setup(CommandLine cmd) {
         try {
             var configPath = resolveConfigPath(cmd);
             loadValuesFromConfig(configPath);
@@ -137,6 +101,11 @@ public final class Config {
     }
 
     private static void loadValues(ValueParser parser) {
+        var gameServerAddress = getIPAddressProperty(parser, "gameIp", () -> InetAddress.getLoopbackAddress());
+        var gameServerPort = getIntProperty(parser, "gamePort", 27015);
+        var localServerAddress = getIPAddressProperty(parser, "bind", () -> InetAddress.getLoopbackAddress());
+        var localPort = getIntProperty(parser, "port", 9110);
+
         threads = getIntProperty(parser, "threads", 2);
         stats_PPS = getBooleanProperty(parser, "ppsStats", true);
         stats_bPS = getBooleanProperty(parser, "bpsStats", true);
@@ -146,17 +115,8 @@ public final class Config {
         challengeCodeCacheCleanerInterval = getLongProperty(parser, "challengeCacheCleanerInterval", 1000);
         challengeCodeTTL = getLongProperty(parser, "challengeTTL", 5000);
         challengeCodeCacheConcurrency = getIntProperty(parser, "challengeCacheConcurrency", 8);
-
-        var gameServerAddress = getIPAddressProperty(parser, "gameIp", () -> InetAddress.getLoopbackAddress());
-        var gameServerPort = getIntProperty(parser, "gamePort", 27015);
-
         gameServer = new InetSocketAddress(gameServerAddress, gameServerPort);
-
-        var localServerAddress = getIPAddressProperty(parser, "bind", () -> InetAddress.getLoopbackAddress());
-        var localPort = getIntProperty(parser, "port", 9110);
-
         localServer = new InetSocketAddress(localServerAddress, localPort);
-
         receiveBufferSize = getIntProperty(parser, "receiveBufSize", 65535);
         sendBufferSize = getIntProperty(parser,"sendBufSize", 65535);
         fixedReceiveAllocatorBufferSize = getIntProperty(parser, "receiveAllocatorBufSize", 65535);
@@ -186,12 +146,9 @@ public final class Config {
                 .orElseGet(defaultValue);
     }
 
+    @SneakyThrows
     private static InetAddress getIpByName(String ip) {
-        try {
-            return InetAddress.getByName(ip);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return InetAddress.getByName(ip);
     }
 
     private static void displayConfig() {
@@ -216,12 +173,5 @@ public final class Config {
         logger.atDebug().log("SendBufferSize: " + sendBufferSize);
         logger.atDebug().log("FixedReceiveAllocatorBufferSize: " + fixedReceiveAllocatorBufferSize);
         logger.atDebug().log("-------------------------------------------------");
-    }
-
-    private static void displayHelpAndExit() {
-        var helpFormatter = new HelpFormatter();
-        helpFormatter.printHelp("java -jar FILENAME <USAGES ARGUMENTS>", options);
-
-        System.exit(0);
     }
 }
