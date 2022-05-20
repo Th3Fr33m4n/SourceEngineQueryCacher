@@ -98,9 +98,9 @@ public final class Main {
 
     private static void initComponents() {
         stats = new Stats();
-        infoClient = new InfoClient("A2SInfoClient");
-        playerClient = new PlayerClient("A2SPlayerClient");
-        rulesClient = new RulesClient("A2SRulesClient");
+        infoClient = new InfoClient();
+        playerClient = new PlayerClient();
+        rulesClient = new RulesClient();
     }
 
     private static void start() {
