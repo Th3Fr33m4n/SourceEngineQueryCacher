@@ -37,13 +37,13 @@ public final class CacheHub {
 
     private static CacheCleaner cacheCleaner;
     public static boolean isComplete() {
-        var isAnyCacheEmpty = CacheHub.A2S_INFO == null ||
-                CacheHub.A2S_INFO.readableBytes() == 0 ||
-                CacheHub.A2S_PLAYER == null ||
-                CacheHub.A2S_PLAYER.readableBytes() == 0 ||
-                CacheHub.A2S_RULES == null ||
-                CacheHub.A2S_RULES.readableBytes() == 0;
+        var isAnyCacheEmpty = isEmpty(A2S_INFO) ||
+                isEmpty(A2S_PLAYER) ||
+                isEmpty(A2S_RULES);
         return !isAnyCacheEmpty;
+    }
+    private static boolean isEmpty(ByteBuf cache) {
+        return cache == null || cache.readableBytes() == 0;
     }
 
     public static void flushAndClose() {

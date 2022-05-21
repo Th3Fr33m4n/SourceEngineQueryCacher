@@ -11,7 +11,7 @@ import java.net.InetSocketAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PacketUtilsTest {
+public class PacketUtilsTests {
 
     @Test
     public void testA2SInfoRequest() {
@@ -67,7 +67,7 @@ public class PacketUtilsTest {
 
     @Test
     public void testGetChallengeFromRequest() {
-        var challenge = new byte[] {5, 10, 15, 20} ;
+        var challenge = new byte[] {5, 10, 15, 20};
         var byteBuf = new UnpooledDirectByteBuf(new UnpooledByteBufAllocator(true),9,9);
         var requestWithChallenge = byteBuf
                 .writeBytes(Packets.A2S_PLAYER_REQUEST_HEADER.retainedDuplicate())

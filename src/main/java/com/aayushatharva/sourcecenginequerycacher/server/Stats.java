@@ -9,13 +9,23 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
+
 public final class Stats extends Thread {
 
     private static final Logger logger = LogManager.getLogger(Stats.class);
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
     private boolean keepRunning = true;
 
-    public static final AtomicLong BPS = new AtomicLong();
-    public static final AtomicLong PPS = new AtomicLong();
+    private static final AtomicLong BPS = new AtomicLong();
+    private static final AtomicLong PPS = new AtomicLong();
+
+    public static void incrementPPS() {
+        Stats.PPS.incrementAndGet();
+    }
+
+    public static void incrementBPS(int byteCount) {
+        Stats.BPS.addAndGet(byteCount);
+    }
 
     @SuppressWarnings("BusyWait")
     @Override
@@ -60,7 +70,6 @@ public final class Stats extends Thread {
     }
 
     private String getTimestamp() {
-        var sdf = new SimpleDateFormat("HH:mm:ss.SSS");
         return sdf.format(new Date());
     }
 
