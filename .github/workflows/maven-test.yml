@@ -1,6 +1,6 @@
 name: Java CI test with Maven
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
