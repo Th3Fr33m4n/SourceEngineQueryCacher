@@ -27,33 +27,30 @@ public final class Config {
 
     public static Integer threads;
     public static Long gameUpdateInterval;
-    public static Integer gameUpdateSocketTimeout;
+    public static Integer gameUpdateTimeout;
     public static Long maxChallengeCodes;
-    public static Long challengeCodeCacheCleanerInterval;
-    public static Long challengeCodeTTL;
-    public static int challengeCodeCacheConcurrency;
+    public static Long challengeCacheCleanerInterval;
+    public static Long challengeTTL;
+    public static int challengeCacheConcurrency;
 
     // IP Addresses and Ports
     public static InetSocketAddress localServer;
     public static InetSocketAddress gameServer;
 
     // Buffers
-    public static Integer receiveBufferSize;
-    public static Integer sendBufferSize;
-    public static Integer fixedReceiveAllocatorBufferSize;
+    public static Integer receiveBufSize;
+    public static Integer sendBufSize;
+    public static Integer receiveAllocatorBufSize;
 
     // Stats
-    public static boolean stats_PPS;
-    public static boolean stats_bPS;
+    public static boolean ppaStats;
+    public static boolean bpsStats;
 
     public static void setup(CommandLine cmd) {
-        try {
-            var configPath = resolveConfigPath(cmd);
-            loadValuesFromConfig(configPath);
-            logger.debug(String.format("Loaded config from: %s", configPath));
-        } catch (ConfigNotFoundException e) {
-            loadValuesFromCmdline(cmd);
-        }
+        var properties = new Properties();
+        loadProperties(cmd, properties);
+        loadValues(new CmdValueParser(cmd), new PropertiesValueParser(properties));
+        clearProperties(properties);
 
         if (logger.isDebugEnabled()) {
             displayConfig();
@@ -83,65 +80,75 @@ public final class Config {
         }
     }
 
-    private static void loadValuesFromConfig(String path) {
-        try (var fis = new FileInputStream(path)) {
-            var properties = new Properties();
-            properties.load(fis);
-            var parser = new PropertiesValueParser(properties);
-            loadValues(parser);
-            properties.clear();
-        } catch (IOException e) {
-            throw new InvalidConfigPathException(path, e);
-        }
+    private static void loadProperties(CommandLine cmd, Properties properties) {
+        try {
+            var configPath = resolveConfigPath(cmd);
+            try (var fis = new FileInputStream(configPath)) {
+                properties.load(fis);
+            } catch (IOException e) {
+                throw new InvalidConfigPathException(configPath, e);
+            }
+        } catch (ConfigNotFoundException e) {}
     }
 
-    private static void loadValuesFromCmdline(CommandLine commandLine) {
-        var parser = new CmdValueParser(commandLine);
-        loadValues(parser);
+    private static void clearProperties(Properties properties) {
+        properties.clear();
     }
 
-    private static void loadValues(ValueParser parser) {
-        var gameServerAddress = getIPAddressProperty(parser, "gameIp", () -> InetAddress.getLoopbackAddress());
-        var gameServerPort = getIntProperty(parser, "gamePort", 27015);
-        var localServerAddress = getIPAddressProperty(parser, "bind", () -> InetAddress.getLoopbackAddress());
-        var localPort = getIntProperty(parser, "port", 9110);
+    private static void loadValues(CmdValueParser cmdArgs, PropertiesValueParser props) {
+        var gameServerAddress = getIPAddressProperty(cmdArgs, props, "gameIp", () -> InetAddress.getLoopbackAddress());
+        var gameServerPort = getIntProperty(cmdArgs, props, "gamePort", 27015);
+        var localServerAddress = getIPAddressProperty(cmdArgs, props, "bind", () -> InetAddress.getLoopbackAddress());
+        var localPort = getIntProperty(cmdArgs, props, "port", 9110);
 
-        threads = getIntProperty(parser, "threads", 2);
-        stats_PPS = getBooleanProperty(parser, "ppsStats", true);
-        stats_bPS = getBooleanProperty(parser, "bpsStats", true);
-        gameUpdateInterval = getLongProperty(parser, "gameUpdateInterval", 2000);
-        gameUpdateSocketTimeout = getIntProperty(parser, "gameUpdateTimeout", 1000);
-        maxChallengeCodes = getLongProperty(parser, "maxChallengeCodes", 100000);
-        challengeCodeCacheCleanerInterval = getLongProperty(parser, "challengeCacheCleanerInterval", 1000);
-        challengeCodeTTL = getLongProperty(parser, "challengeTTL", 5000);
-        challengeCodeCacheConcurrency = getIntProperty(parser, "challengeCacheConcurrency", 8);
+        threads = getIntProperty(cmdArgs, props, "threads", 2);
+        ppaStats = getBooleanProperty(cmdArgs, props, "ppsStats", true);
+        bpsStats = getBooleanProperty(cmdArgs, props, "bpsStats", true);
+        gameUpdateInterval = getLongProperty(cmdArgs, props, "gameUpdateInterval", 2000);
+        gameUpdateTimeout = getIntProperty(cmdArgs, props, "gameUpdateTimeout", 1000);
+        maxChallengeCodes = getLongProperty(cmdArgs, props, "maxChallengeCodes", 100000);
+        challengeCacheCleanerInterval = getLongProperty(cmdArgs, props, "challengeCacheCleanerInterval", 1000);
+        challengeTTL = getLongProperty(cmdArgs, props, "challengeTTL", 5000);
+        challengeCacheConcurrency = getIntProperty(cmdArgs, props, "challengeCacheConcurrency", 8);
         gameServer = new InetSocketAddress(gameServerAddress, gameServerPort);
         localServer = new InetSocketAddress(localServerAddress, localPort);
-        receiveBufferSize = getIntProperty(parser, "receiveBufSize", 65535);
-        sendBufferSize = getIntProperty(parser,"sendBufSize", 65535);
-        fixedReceiveAllocatorBufferSize = getIntProperty(parser, "receiveAllocatorBufSize", 65535);
+        receiveBufSize = getIntProperty(cmdArgs, props, "receiveBufSize", 65535);
+        sendBufSize = getIntProperty(cmdArgs, props,"sendBufSize", 65535);
+        receiveAllocatorBufSize = getIntProperty(cmdArgs, props, "receiveAllocatorBufSize", 65535);
     }
 
-    private static int getIntProperty(ValueParser parser, String key, int defaultValue) {
-        return Optional.ofNullable(parser.getValue(key))
-                .map(Integer::parseInt)
+    private static Optional<String> readPropertyWithFallback(ValueParser main, ValueParser fallback, String key) {
+        return Optional.ofNullable(main.getValue(key))
+                .or(() -> Optional.ofNullable(fallback.getValue(key)));
+    }
+
+    private static int getIntProperty(ValueParser main, ValueParser fallback, String key, int defaultValue) {
+        return readPropertyWithFallback(main, fallback, key)
+                .map(Integer::valueOf)
                 .orElse(defaultValue);
     }
 
-    private static long getLongProperty(ValueParser parser, String key, long defaultValue) {
-        return Optional.ofNullable(parser.getValue(key))
+    private static long getLongProperty(ValueParser main, ValueParser fallback, String key, long defaultValue) {
+        return readPropertyWithFallback(main, fallback, key)
                 .map(Long::parseLong)
                 .orElse(defaultValue);
     }
 
-    private static boolean getBooleanProperty(ValueParser parser, String key, boolean defaultValue) {
-        return Optional.ofNullable(parser.getValue(key))
-                .map(Boolean::parseBoolean)
-                .orElse(defaultValue);
+    private static boolean getBooleanProperty(ValueParser main, ValueParser fallback, String key, boolean defaultValue) {
+        boolean prop;
+        if (main.hasKey(key)) {
+            prop = true;
+        } else if (fallback.hasKey(key)) {
+            prop = Boolean.valueOf(fallback.getValue(key));
+        } else {
+            prop = defaultValue;
+        }
+
+        return prop;
     }
 
-    private static InetAddress getIPAddressProperty(ValueParser parser, String key, Supplier defaultValue) {
-        return Optional.ofNullable(parser.getValue(key))
+    private static InetAddress getIPAddressProperty(ValueParser main, ValueParser fallback, String key, Supplier defaultValue) {
+        return readPropertyWithFallback(main, fallback, key)
                 .map(Config::getIpByName)
                 .orElseGet(defaultValue);
     }
@@ -154,24 +161,24 @@ public final class Config {
     private static void displayConfig() {
         logger.atDebug().log("----------------- CONFIGURATION -----------------");
         logger.atDebug().log("Threads: " + threads);
-        logger.atDebug().log("PPS: " + stats_PPS);
-        logger.atDebug().log("bPS: " + stats_bPS);
+        logger.atDebug().log("PPS: " + ppaStats);
+        logger.atDebug().log("bPS: " + bpsStats);
 
         logger.atDebug().log("GameUpdateInterval: " + gameUpdateInterval);
-        logger.atDebug().log("GameUpdateSocketTimeout: " + gameUpdateSocketTimeout);
+        logger.atDebug().log("GameUpdateSocketTimeout: " + gameUpdateTimeout);
 
         logger.atDebug().log("MaxChallengeCode: " + maxChallengeCodes);
-        logger.atDebug().log("ChallengeCodeCacheCleanerInterval: " + challengeCodeCacheCleanerInterval);
-        logger.atDebug().log("ChallengeCodeCacheConcurrency: " + challengeCodeCacheConcurrency);
+        logger.atDebug().log("ChallengeCodeCacheCleanerInterval: " + challengeCacheCleanerInterval);
+        logger.atDebug().log("ChallengeCodeCacheConcurrency: " + challengeCacheConcurrency);
 
         logger.atDebug().log("LocalServerIPAddress: " + localServer.getAddress().getHostAddress());
         logger.atDebug().log("LocalServerPort: " + localServer.getPort());
         logger.atDebug().log("GameServerIPAddress: " + gameServer.getAddress().getHostAddress());
         logger.atDebug().log("GameServerPort: " + gameServer.getPort());
 
-        logger.atDebug().log("ReceiveBufferSize: " + receiveBufferSize);
-        logger.atDebug().log("SendBufferSize: " + sendBufferSize);
-        logger.atDebug().log("FixedReceiveAllocatorBufferSize: " + fixedReceiveAllocatorBufferSize);
+        logger.atDebug().log("ReceiveBufferSize: " + receiveBufSize);
+        logger.atDebug().log("SendBufferSize: " + sendBufSize);
+        logger.atDebug().log("FixedReceiveAllocatorBufferSize: " + receiveAllocatorBufSize);
         logger.atDebug().log("-------------------------------------------------");
     }
 }

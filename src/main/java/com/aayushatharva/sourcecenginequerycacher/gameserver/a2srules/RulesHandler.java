@@ -27,7 +27,6 @@ final class RulesHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         } else if (matchesA2SRulesResponse(datagramPacket)) {
             // Set new Packet Data
             CacheHub.A2S_RULES.clear().writeBytes(datagramPacket.content());
-
             logger.debug("New A2SRules Update Cached Successfully");
         } else {
             logger.error("Received unsupported A2S Rules Response from Game Server: {}", ByteBufUtil.hexDump(datagramPacket.content()));

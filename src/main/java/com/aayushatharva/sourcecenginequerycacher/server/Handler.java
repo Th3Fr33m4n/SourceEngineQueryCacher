@@ -37,11 +37,11 @@ public final class Handler extends SimpleChannelInboundHandler<DatagramPacket> {
     }
 
     private void incrementStats(DatagramPacket packet) {
-        if (Config.stats_PPS) {
+        if (Config.ppaStats) {
             Stats.incrementPPS();
         }
 
-        if (Config.stats_bPS) {
+        if (Config.bpsStats) {
             Stats.incrementBPS(packet.content().readableBytes());
         }
     }

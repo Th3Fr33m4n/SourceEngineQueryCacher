@@ -31,21 +31,17 @@ public final class Stats extends Thread {
     @Override
     public void run() {
 
-        logger.info("Starting Stats, PPS Enabled: " + Config.stats_PPS + ", bPS Enabled: " + Config.stats_bPS);
+        logger.info("Starting Stats, PPS Enabled: " + Config.ppaStats + ", bPS Enabled: " + Config.bpsStats);
 
         while (keepRunning) {
 
-            if (Config.stats_PPS && Config.stats_bPS) {
+            if (Config.ppaStats && Config.bpsStats) {
                 System.out.print("[" + getTimestamp() + "] [STATS] p/s: " + PPS.getAndSet(0L));
                 System.out.println(" | b/s: " + calculateBps());
-            } else {
-                if (Config.stats_PPS) {
-                    System.out.println("[" + getTimestamp() + "] [STATS] p/s: " + PPS.getAndSet(0L) + " | b/s: 0");
-                }
-
-                if (Config.stats_bPS) {
-                    System.out.println("[" + getTimestamp() + "] [STATS] p/s: 0 | b/s: " + calculateBps());
-                }
+            } else if (Config.ppaStats) {
+                System.out.println("[" + getTimestamp() + "] [STATS] p/s: " + PPS.getAndSet(0L) + " | b/s: 0");
+            } else if (Config.bpsStats) {
+                System.out.println("[" + getTimestamp() + "] [STATS] p/s: 0 | b/s: " + calculateBps());
             }
 
             try {

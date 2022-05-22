@@ -13,4 +13,9 @@ public class CmdValueParser implements ValueParser {
     public String getValue(String key) {
         return cmd.getOptionValue(key);
     }
+
+    @Override
+    public boolean hasKey(String key) {
+        return cmd.hasOption(key);
+    }
 }

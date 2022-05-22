@@ -75,8 +75,8 @@ public final class Main {
                 .group(eventLoopGroup)
                 .channelFactory(() -> new EpollDatagramChannel(InternetProtocolFamily.IPv4))
                 .option(ChannelOption.ALLOCATOR, BYTE_BUF_ALLOCATOR)
-                .option(ChannelOption.SO_SNDBUF, Config.sendBufferSize)
-                .option(ChannelOption.SO_RCVBUF, Config.receiveBufferSize)
+                .option(ChannelOption.SO_SNDBUF, Config.sendBufSize)
+                .option(ChannelOption.SO_RCVBUF, Config.receiveBufSize)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(UnixChannelOption.SO_REUSEPORT, true)
                 .option(EpollChannelOption.UDP_GRO, true) // Enable UDP GRO
@@ -137,7 +137,7 @@ public final class Main {
         playerClient.shutdown();
         rulesClient.shutdown();
         stats.shutdown();
-        CacheHub.flushAndClose();
+        CacheHub.shutdown();
         future.get();
     }
 }

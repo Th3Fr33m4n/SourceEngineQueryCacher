@@ -29,11 +29,7 @@ public final class CacheHub {
     /**
      * Challenge Code Cache
      */
-    public static final Cache<String, String> CHALLENGE_CACHE = CacheBuilder.newBuilder()
-            .maximumSize(Config.maxChallengeCodes)
-            .expireAfterWrite(Duration.ofMillis(Config.challengeCodeTTL))
-            .concurrencyLevel(Config.challengeCodeCacheConcurrency)
-            .build();
+    public static Cache<String, String> CHALLENGE_CACHE;
 
     private static CacheCleaner cacheCleaner;
     public static boolean isComplete() {
@@ -46,13 +42,25 @@ public final class CacheHub {
         return cache == null || cache.readableBytes() == 0;
     }
 
-    public static void flushAndClose() {
-        if (cacheCleaner == null) {
+    public static void shutdown() {
+        if (cacheCleaner != null) {
             cacheCleaner.shutdown();
         }
+        flush();
+        release();
+    }
 
-        CacheHub.CHALLENGE_CACHE.invalidateAll();
-        CacheHub.CHALLENGE_CACHE.cleanUp();
+    public static void flush() {
+        if (CHALLENGE_CACHE != null) {
+            CacheHub.CHALLENGE_CACHE.invalidateAll();
+            CacheHub.CHALLENGE_CACHE.cleanUp();
+        }
+        CacheHub.A2S_INFO.clear();
+        CacheHub.A2S_PLAYER.clear();
+        CacheHub.A2S_RULES.clear();
+    }
+
+    private static void release() {
         ByteBufUtils.safeRelease(CacheHub.A2S_INFO);
         ByteBufUtils.safeRelease(CacheHub.A2S_PLAYER);
         ByteBufUtils.safeRelease(CacheHub.A2S_RULES);
@@ -62,6 +70,14 @@ public final class CacheHub {
         if (cacheCleaner == null) {
             cacheCleaner = new CacheCleaner();
             cacheCleaner.start();
+        }
+
+        if (CHALLENGE_CACHE == null) {
+            CHALLENGE_CACHE = CacheBuilder.newBuilder()
+                    .maximumSize(Config.maxChallengeCodes)
+                    .expireAfterWrite(Duration.ofMillis(Config.challengeTTL))
+                    .concurrencyLevel(Config.challengeCacheConcurrency)
+                    .build();
         }
     }
 }
