@@ -13,7 +13,7 @@ public class CommandLineArgs {
                 /*General Configuration*/
                 .addOption("h", "help", false, "Display Usages")
                 .addOption("c", "config", true, "Configuration File Path")
-                .addOption("w", "threads", true, "Number of Threads")
+                .addOption("t", "threads", true, "Number of Threads")
                 .addOption("p", "ppsStats", false, "Enable Packets per Second Stats")
                 .addOption("b", "bpsStats", false, "Enable Bits per Second Stats")
 

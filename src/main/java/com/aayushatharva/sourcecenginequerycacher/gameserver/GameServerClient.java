@@ -30,9 +30,9 @@ public abstract class GameServerClient extends Thread {
                     .group(Main.eventLoopGroup)
                     .channelFactory(EpollDatagramChannel::new)
                     .option(ChannelOption.ALLOCATOR, Main.BYTE_BUF_ALLOCATOR)
-                    .option(ChannelOption.SO_SNDBUF, Config.sendBufferSize)
-                    .option(ChannelOption.SO_RCVBUF, Config.receiveBufferSize)
-                    .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Config.fixedReceiveAllocatorBufferSize))
+                    .option(ChannelOption.SO_SNDBUF, Config.sendBufSize)
+                    .option(ChannelOption.SO_RCVBUF, Config.receiveBufSize)
+                    .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(Config.receiveAllocatorBufSize))
                     .handler(handler);
 
             var channel = bootstrap.connect(Config.gameServer).sync().channel();

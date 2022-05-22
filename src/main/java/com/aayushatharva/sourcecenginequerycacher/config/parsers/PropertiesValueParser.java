@@ -13,4 +13,9 @@ public class PropertiesValueParser implements ValueParser {
     public String getValue(String key) {
         return properties.getProperty(key);
     }
+
+    @Override
+    public boolean hasKey(String key) {
+        return properties.containsKey(key);
+    }
 }
