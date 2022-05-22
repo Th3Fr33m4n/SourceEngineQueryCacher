@@ -22,7 +22,6 @@ public class InfoHandlerTests {
     private InfoHandler infoHandler;
     private InetSocketAddress addr;
     private ByteBufAllocator allocator;
-    @Mock
     private ChannelHandlerContext ctx;
 
     @BeforeEach

@@ -25,7 +25,6 @@ public class CmdValueParserTests {
         when(cmd.hasOption("true_key")).thenReturn(true);
         when(cmd.hasOption("missing_key")).thenReturn(false);
 
-
         var result = cmdValueParser.getValue("version");
         var result2 = cmdValueParser.getValue("another_var");
         var result3 = cmdValueParser.hasKey("missing_key");

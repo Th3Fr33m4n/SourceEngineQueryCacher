@@ -52,26 +52,4 @@ public class ConfigTests {
         assertEquals(Config.sendBufSize, 11);
         assertEquals(Config.receiveAllocatorBufSize, 12);
     }
-
-    @Test
-    public void testConfigFromDefaults() {
-        var cmd = CommandLineArgs.parse(buildArgList());
-        Config.setup(cmd);
-        var svAddr = new InetSocketAddress("0.0.0.0", 9);
-        var gameAddr = new InetSocketAddress("0.0.0.0", 8);
-        assertEquals(Config.threads, 1);
-        assertTrue(Config.ppaStats);
-        assertTrue(Config.bpsStats);
-        assertEquals(Config.gameUpdateInterval, 2);
-        assertEquals(Config.gameUpdateTimeout, 3);
-        assertEquals(Config.maxChallengeCodes, 4);
-        assertEquals(Config.challengeCacheCleanerInterval, 5);
-        assertEquals(Config.challengeTTL, 6);
-        assertEquals(Config.challengeCacheConcurrency, 7);
-        assertEquals(Config.localServer, svAddr);
-        assertEquals(Config.gameServer, gameAddr);
-        assertEquals(Config.receiveBufSize, 10);
-        assertEquals(Config.sendBufSize, 11);
-        assertEquals(Config.receiveAllocatorBufSize, 12);
-    }
 }
